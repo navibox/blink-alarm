@@ -34,6 +34,9 @@ jobs:
         run: |
           python -c "import cv2, numpy, PIL, mediapipe; print('dependencies OK')"
 
+      - name: 安装 UPX（压缩 exe 体积，跳过关键 DLL）
+        run: choco install upx -y --no-progress
+
       - name: 打包为 exe
         run: pyinstaller --noconfirm BlinkAlarm.spec
 
