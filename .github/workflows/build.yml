@@ -32,7 +32,7 @@ jobs:
 
       - name: 验证依赖
         run: |
-          python -c "import cv2, numpy, PIL, mediapipe; print('依赖加载正常')"
+          python -c "import cv2, numpy, PIL, mediapipe; print('dependencies OK')"
 
       - name: 打包为 exe
         run: pyinstaller --noconfirm BlinkAlarm.spec
