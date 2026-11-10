@@ -25,7 +25,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install numpy Pillow
           pip install mediapipe
-          REM 解决冲突：mediapipe 自带 opencv-python，替换为 headless 版以减小体积
+          # 解决冲突：mediapipe 自带 opencv，替换为 headless 版以减小体积
           pip uninstall -y opencv-python opencv-contrib-python
           pip install opencv-python-headless
           pip install pyinstaller
