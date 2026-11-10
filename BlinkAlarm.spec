@@ -60,15 +60,9 @@ exe = EXE(
     name="BlinkAlarm",
     debug=False,
     bootloader_ignore_signals=False,
-       strip=True,                # 去掉 DLL 调试符号
-    upx=True,                  # 启用 UPX 压缩（排除关键 DLL，避免崩溃）
-    upx_exclude=[
-        'python311.dll',       # Python 运行时，UPX 压缩后会导致 LoadLibrary 失败
-        'vcruntime140.dll',
-        'vcruntime140_1.dll',
-        'msvcp140.dll',
-        'concrt140.dll',
-    ],
+    strip=True,                # 去掉 DLL 调试符号
+    upx=False,                 # UPX 会破坏 python3XX.dll 导致 "Failed to load Python DLL"，故关闭
+    upx_exclude=[],
     runtime_tmpdir=None,
     console=False,
     disable_windowed_traceback=False,
