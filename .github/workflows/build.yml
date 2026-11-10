@@ -1,0 +1,51 @@
+name: 自动编译 Windows 程序
+
+# 触发方式：
+#   1) 每次推送到 main / master 分支
+#   2) 手动点击 Actions 页面的 "Run workflow"
+#   3) 打 tag（如 v1.0）时自动生成可下载的 Release
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ "v*" ]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 安装依赖
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: 打包为 exe
+        run: pyinstaller --noconfirm BlinkAlarm.spec
+
+      - name: 生成校验信息
+        run: dir dist
+
+      - name: 上传可执行文件（供下载）
+        uses: actions/upload-artifact@v4
+        with:
+          name: BlinkAlarm-Windows
+          path: dist/BlinkAlarm.exe
+          retention-days: 30
+
+      - name: 发布 Release（仅在打 tag 时）
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/BlinkAlarm.exe
+          generate_release_notes: true
