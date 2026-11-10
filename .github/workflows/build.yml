@@ -24,10 +24,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pyinstaller
-
-      - name: 安装 UPX（压缩 exe 体积）
-        run: choco install upx -y --no-progress
+          pip install pyinstaller      
 
       - name: 打包为 exe
         run: pyinstaller --noconfirm BlinkAlarm.spec
