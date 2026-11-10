@@ -1,9 +1,5 @@
 name: 自动编译 Windows 程序
 
-# 触发方式：
-#   1) 每次推送到 main / master 分支
-#   2) 手动点击 Actions 页面的 "Run workflow"
-#   3) 打 tag（如 v1.0）时自动生成可下载的 Release
 on:
   push:
     branches: [ main, master ]
@@ -29,6 +25,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pyinstaller
+
+      - name: 安装 UPX（压缩 exe 体积）
+        run: choco install upx -y --no-progress
 
       - name: 打包为 exe
         run: pyinstaller --noconfirm BlinkAlarm.spec
