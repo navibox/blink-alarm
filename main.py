@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 """
 眨眼报警助手 (BlinkAlarm) —— 单文件版
@@ -33,12 +32,9 @@ from PIL import Image, ImageTk
 IS_WINDOWS = sys.platform.startswith("win")
 
 # ============================================================
-
 # 1. 配置管理
-
 # ============================================================
 CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json")
-
 # PyInstaller 打包后，配置文件放到 exe 同级目录
 if getattr(sys, "frozen", False):
     CONFIG_PATH = os.path.join(os.path.dirname(sys.executable), "config.json")
@@ -87,9 +83,7 @@ def save_config(cfg):
         return False
 
 # ============================================================
-
 # 2. 眼睛检测与眨眼计数
-
 # ============================================================
 RIGHT_EYE = [33, 160, 158, 133, 153, 144]
 LEFT_EYE = [362, 385, 387, 263, 373, 380]
@@ -211,9 +205,7 @@ def draw_overlay(frame_bgr, info, closed, ear_threshold, show_landmarks=True):
     return frame_bgr
 
 # ============================================================
-
 # 3. 报警：声音 + Webhook
-
 # ============================================================
 _SIREN_PATH = None
 
@@ -321,9 +313,7 @@ class Alarm:
         return Alarm._send_webhook(cfg, {"test": True})
 
 # ============================================================
-
 # 4. 主界面
-
 # ============================================================
 def pick_font_family():
     try:
@@ -575,3 +565,207 @@ class BlinkAlarmApp:
         self.frame_queue = queue.Queue(maxsize=1)
         self.status_queue = queue.Queue()
         self.monitoring = True
+        self.btn_toggle.config(text="■  停止监测", bg="#d1242f", activebackground="#a40e26")
+        self._set_status("监测中 · 请眨眼", "#2ea043")
+        threading.Thread(target=self._run_camera,
+                         args=(int(self.cfg["camera_index"]),), daemon=True).start()
+        self.root.after(30, self._poll)
+
+    def _stop_monitor(self):
+        self.monitoring = False
+        self.stop_event.set()
+        self.alarm.stop_sound()
+        self.btn_toggle.config(text="▶  开始监测", bg="#2ea043", activebackground="#238636")
+        self._set_status("已停止", "#1f6feb")
+        self.preview_label.config(image="")
+        self.preview_label.imgtk = None
+
+    def _run_camera(self, camera_index):
+        import cv2
+        cap = None
+        backends = [cv2.CAP_DSHOW, cv2.CAP_MSMF, cv2.CAP_ANY] if IS_WINDOWS else [cv2.CAP_ANY]
+        for b in backends:
+            try:
+                cap = cv2.VideoCapture(camera_index, b)
+            except Exception:
+                cap = None
+            if cap is not None and cap.isOpened():
+                break
+            if cap is not None:
+                cap.release()
+                cap = None
+        if cap is None:
+            self.status_queue.put({"error": f"无法打开摄像头 {camera_index}，请检查设备或换编号。"})
+            return
+        try:
+            cap.set(cv2.CAP_PROP_FRAME_WIDTH, 960)
+            cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+        except Exception:
+            pass
+
+        detector = EyeDetector()
+        counter = BlinkCounter()
+        while not self.stop_event.is_set():
+            ok, frame = cap.read()
+            if not ok:
+                self.status_queue.put({"error": "读取摄像头画面失败，监测已停止。"})
+                break
+            counter.configure(
+                self.live.get("ear_threshold", 0.21),
+                self.live.get("min_closed_frames", 2),
+                self.live.get("max_blink_frames", 25),
+                self.live.get("blink_window", 2.0),
+                self.live.get("target", 5),
+                self.live.get("cooldown", 8.0))
+            info = detector.process(frame)
+            ear = info["ear"] if info else None
+            st = counter.update(ear)
+            if st["triggered"]:
+                self.alarm.trigger(self.cfg, {"blinks": self.live.get("target", 5)})
+            frame = draw_overlay(frame, info, st["closed"],
+                                 self.live.get("ear_threshold", 0.21),
+                                 self.live.get("show_landmarks", True))
+            if self.live.get("mirror", True):
+                frame = cv2.flip(frame, 1)
+            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            try:
+                self.frame_queue.put_nowait(rgb)
+            except queue.Full:
+                pass
+            self.status_queue.put({"count": st["count"], "target": self.live.get("target", 5),
+                                   "face": st["face"], "triggered": st["triggered"],
+                                   "closed": st["closed"]})
+        cap.release()
+        detector.close()
+        self.status_queue.put({"stopped": True})
+
+    def _poll(self):
+        try:
+            while True:
+                self._last_frame = self.frame_queue.get_nowait()
+        except queue.Empty:
+            pass
+        if self._last_frame is not None:
+            try:
+                img = Image.fromarray(self._last_frame)
+                imgtk = ImageTk.PhotoImage(image=img)
+                self.preview_label.configure(image=imgtk)
+                self.preview_label.imgtk = imgtk
+            except Exception:
+                pass
+        try:
+            while True:
+                st = self.status_queue.get_nowait()
+                self._handle_status(st)
+        except queue.Empty:
+            pass
+        if self.monitoring:
+            self.root.after(33, self._poll)
+
+    def _handle_status(self, st):
+        if "error" in st:
+            self._set_status("错误：" + st["error"], "#d1242f")
+            self._stop_monitor()
+            messagebox.showerror("摄像头错误", st["error"])
+            return
+        if st.get("stopped"):
+            if self.monitoring:
+                self._stop_monitor()
+            return
+        if not st.get("face", True):
+            self._set_status("未检测到人脸 · 请正对摄像头", "#bf8700")
+            self.lbl_count.config(text="连续眨眼 - / %d" % st.get("target", 5))
+        else:
+            self._set_status("监测中 · 请眨眼", "#2ea043")
+            self.lbl_count.config(text=f"连续眨眼 {st['count']} / {st['target']}")
+        if st.get("triggered"):
+            self._trigger_count += 1
+            self.lbl_trigcount.config(text=f"已触发报警：{self._trigger_count} 次")
+            self._set_status("🔔 已触发报警！", "#d1242f")
+
+    def _set_status(self, text, color):
+        self.lbl_status.config(text=text, bg=color)
+        self.lbl_status.master.config(bg=color)
+        self.lbl_count.config(bg=color)
+
+    def _choose_sound(self):
+        path = filedialog.askopenfilename(
+            title="选择报警声音文件", filetypes=[("WAV 音频", "*.wav"), ("所有文件", "*.*")])
+        if path:
+            self.var_sound_file.set(path)
+            self._sync_settings()
+
+    def _test_sound(self):
+        self._sync_settings()
+        self.alarm.sound.start(float(self.var_duration.get() or 3.0), self.var_sound_file.get())
+
+    def _test_webhook(self):
+        self._sync_settings()
+        if not self.var_url.get().strip():
+            messagebox.showwarning("提示", "请先填写外部报警地址")
+            return
+        self._set_status("正在测试外部报警…", "#1f6feb")
+
+        def run():
+            code = Alarm.test_webhook(self.cfg)
+            self.root.after(0, lambda: self._webhook_result(code))
+        threading.Thread(target=run, daemon=True).start()
+
+    def _webhook_result(self, code):
+        if code and 200 <= int(code) < 300:
+            messagebox.showinfo("测试成功", f"外部报警已发送，返回状态码：{code}")
+        elif code:
+            messagebox.showwarning("已发送", f"请求已发出，但返回状态码：{code}")
+        else:
+            messagebox.showerror("测试失败", "无法连接外部地址，请检查地址与网络。")
+
+    def _on_close(self):
+        self.monitoring = False
+        self.stop_event.set()
+        self.alarm.stop_sound()
+        try:
+            self.root.destroy()
+        except Exception:
+            pass
+
+# ============================================================
+# 5. 入口
+# ============================================================
+def check_env():
+    missing = []
+    for mod, tip in [("numpy", "numpy"), ("PIL", "Pillow"),
+                     ("cv2", "opencv-python"), ("mediapipe", "mediapipe")]:
+        try:
+            __import__(mod)
+        except Exception:
+            missing.append(tip)
+    return missing
+
+def main():
+    missing = check_env()
+    if missing:
+        msg = ("缺少以下依赖，请先安装：\n\n    " + "\n    ".join(missing) +
+               "\n\n安装方法：\n    pip install -r requirements.txt\n\n"
+               "或者使用 GitHub Actions 自动编译的 exe 版本。")
+        print(msg)
+        try:
+            r = tk.Tk(); r.withdraw()
+            messagebox.showerror("缺少依赖", msg)
+            r.destroy()
+        except Exception:
+            pass
+        return 1
+    root = tk.Tk()
+    BlinkAlarmApp(root)
+    root.mainloop()
+    return 0
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except Exception:
+        traceback.print_exc()
+        try:
+            input("\n程序异常退出，按回车键关闭…")
+        except Exception:
+            pass
