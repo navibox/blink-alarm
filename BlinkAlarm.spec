@@ -27,6 +27,9 @@ datas = filtered_datas
 
 hiddenimports += []
 
+# 把资源目录（图标等）打包进 exe
+datas += [("assets", "assets")]
+
 a = Analysis(
     ["main.py"],
     pathex=[],
@@ -66,4 +69,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+     icon="assets/icon.ico",      # 应用图标
 )
