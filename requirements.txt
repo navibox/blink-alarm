@@ -1,6 +1,7 @@
 # 眨眼报警助手依赖
 # 建议使用 Python 3.9 ~ 3.12（mediapipe 对更高版本支持有限）
 numpy>=1.24
-opencv-python>=4.8
+# 用 headless 版 OpenCV：去掉 Qt 界面库（我们用 PIL 显示画面），大幅减小体积
+opencv-python-headless>=4.8
 mediapipe>=0.10.9
 Pillow>=10.0
