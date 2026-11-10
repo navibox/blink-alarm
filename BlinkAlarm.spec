@@ -1,15 +1,30 @@
 # -*- mode: python ; coding: utf-8 -*-
-"""PyInstaller 打包配置：把程序打包成单个 Windows exe。
+"""PyInstaller 打包配置（精简体积版）。
 
-本地打包： pip install pyinstaller 然后执行  pyinstaller BlinkAlarm.spec
-GitHub 打包：推送代码后由 .github/workflows/build.yml 自动完成。
+优化点：
+  1. opencv-python-headless 去掉 Qt 界面库（requirements.txt 已切换）
+  2. 只保留 mediapipe 的 face_mesh 模型，丢掉 hand/pose/holistic 等不用的模型
+  3. strip=True 去掉调试符号
+  4. upx=True 加 UPX 压缩（需 CI 中安装 upx）
+  5. excludes 排除大量无关大依赖
 """
 from PyInstaller.utils.hooks import collect_all
 
-# mediapipe 内含模型/资源文件，必须完整收集，否则运行时会报找不到文件
 datas, binaries, hiddenimports = collect_all("mediapipe")
 
-# 全部逻辑已合并进 main.py，无需再声明子模块
+# --- 只保留 face_mesh 相关模型，丢弃其它 mediapipe 模型 ---
+keep_keywords = ('face_mesh', 'face_detection', 'face_geometry', 'palm_detection')
+filtered_datas = []
+for src, dst in datas:
+    lower = dst.lower()
+    is_model = any(lower.endswith(ext) for ext in ('.tflite', '.bytes', '.pb', '.pbtxt'))
+    if is_model:
+        if any(k in lower for k in keep_keywords):
+            filtered_datas.append((src, dst))
+    else:
+        filtered_datas.append((src, dst))
+datas = filtered_datas
+
 hiddenimports += []
 
 a = Analysis(
@@ -21,7 +36,13 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=[
+        'scipy', 'matplotlib', 'pandas', 'sklearn', 'scikit-learn', 'sympy',
+        'torch', 'torchvision', 'tensorflow', 'keras', 'jax',
+        'PyQt5', 'PyQt6', 'PySide2', 'PySide6', 'wx',
+        'unittest', 'pytest', 'setuptools', 'distutils',
+        'numpy.tests', 'numpy.distutils', 'numpy.f2py',
+    ],
     noarchive=False,
 )
 
@@ -36,11 +57,11 @@ exe = EXE(
     name="BlinkAlarm",
     debug=False,
     bootloader_ignore_signals=False,
-    strip=False,
-    upx=False,
+    strip=True,
+    upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=False,          # 不弹出黑色命令行窗口
+    console=False,
     disable_windowed_traceback=False,
     target_arch=None,
     codesign_identity=None,
