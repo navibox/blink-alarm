@@ -44,7 +44,7 @@ DEFAULT_CONFIG = {
     "mirror": True,
     "sensitivity": 60,
     "target_blinks": 5,
-    "blink_window": 2.0,
+    "blink_window": 10.0,
     "min_closed_frames": 2,
     "max_blink_frames": 25,
     "cooldown": 8.0,
@@ -131,7 +131,7 @@ class BlinkCounter:
         self.ear_threshold = 0.21
         self.min_closed_frames = 2
         self.max_blink_frames = 25
-        self.blink_window = 2.0
+        self.blink_window = 10.0
         self.target = 5
         self.cooldown = 8.0
         self.count = 0
@@ -396,7 +396,7 @@ class BlinkAlarmApp:
         self.var_mirror = tk.BooleanVar(value=bool(c.get("mirror", True)))
         self.var_sens = tk.IntVar(value=int(c.get("sensitivity", 60)))
         self.var_target = tk.IntVar(value=int(c.get("target_blinks", 5)))
-        self.var_window = tk.DoubleVar(value=float(c.get("blink_window", 2.0)))
+        self.var_window = tk.DoubleVar(value=float(c.get("blink_window", 10.0)))
         self.var_cooldown = tk.DoubleVar(value=float(c.get("cooldown", 8.0)))
         self.var_min_closed = tk.IntVar(value=int(c.get("min_closed_frames", 2)))
         self.var_max_closed = tk.IntVar(value=int(c.get("max_blink_frames", 25)))
@@ -442,7 +442,7 @@ class BlinkAlarmApp:
                     font=self.f_value, command=self._sync_settings).pack(side="right")
         row = ttk.Frame(grp_trig); row.pack(fill="x", padx=10, pady=4)
         ttk.Label(row, text="累计时间窗口(秒)", font=self.f_label).pack(side="left")
-        ttk.Spinbox(row, from_=0.5, to=10.0, increment=0.5, width=4,
+        ttk.Spinbox(row, from_=1.0, to=30.0, increment=1.0, width=4,
                     textvariable=self.var_window, font=self.f_value,
                     command=self._sync_settings).pack(side="right")
         row = ttk.Frame(grp_trig); row.pack(fill="x", padx=10, pady=(4, 10))
@@ -614,7 +614,7 @@ class BlinkAlarmApp:
                 self.live.get("ear_threshold", 0.21),
                 self.live.get("min_closed_frames", 2),
                 self.live.get("max_blink_frames", 25),
-                self.live.get("blink_window", 2.0),
+                self.live.get("blink_window", 10.0),
                 self.live.get("target", 5),
                 self.live.get("cooldown", 8.0))
             info = detector.process(frame)
