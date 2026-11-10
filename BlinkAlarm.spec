@@ -9,8 +9,8 @@ from PyInstaller.utils.hooks import collect_all
 # mediapipe 内含模型/资源文件，必须完整收集，否则运行时会报找不到文件
 datas, binaries, hiddenimports = collect_all("mediapipe")
 
-# 项目自身的模块（通过运行时动态导入，显式声明更稳妥）
-hiddenimports += ["config", "eye_detector", "alarm", "app"]
+# 全部逻辑已合并进 main.py，无需再声明子模块
+hiddenimports += []
 
 a = Analysis(
     ["main.py"],
