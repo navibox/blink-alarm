@@ -28,6 +28,9 @@ public sealed class AppSettings
     [JsonPropertyName("webhook_method")] public string WebhookMethod { get; set; } = "POST";
     [JsonPropertyName("webhook_payload")] public string WebhookPayload { get; set; } = "{\"event\": \"blink_alarm\"}";
 
+    [JsonPropertyName("relay_enabled")] public bool RelayEnabled { get; set; }
+    [JsonPropertyName("relay_port")] public string RelayPort { get; set; } = "";
+
     /// <summary>把所有数值收拢到界面允许的范围内（配置文件可能被手工改坏）。</summary>
     public AppSettings Normalize()
     {
@@ -41,6 +44,7 @@ public sealed class AppSettings
         AlarmDurationSeconds = Clamp(AlarmDurationSeconds, 1, 120, 6);
         SoundFile ??= "";
         WebhookUrl ??= "";
+        RelayPort ??= "";
         WebhookPayload ??= "";
         WebhookMethod = string.Equals(WebhookMethod, "GET", StringComparison.OrdinalIgnoreCase) ? "GET" : "POST";
         return this;

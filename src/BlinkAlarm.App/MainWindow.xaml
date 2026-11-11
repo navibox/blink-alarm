@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:BlinkAlarm.App"
         xmlns:controls="clr-namespace:BlinkAlarm.App.Controls"
-        Title="眨眼报警助手" Width="1240" Height="840" MinWidth="980" MinHeight="620"
+        Title="眨眼报警助手" Width="1240" Height="800" MinWidth="940" MinHeight="600"
         WindowStartupLocation="CenterScreen"
         Background="{StaticResource WindowBrush}" Foreground="{StaticResource TextBrush}"
         FontFamily="{StaticResource UiFont}" FontSize="15" UseLayoutRounding="True">
@@ -20,8 +20,8 @@
             <Setter Property="Background" Value="{StaticResource SuccessBrush}" />
             <Setter Property="Foreground" Value="White" />
             <Setter Property="Content" Value="▶   开始监测" />
-            <Setter Property="FontSize" Value="19" />
-            <Setter Property="Height" Value="64" />
+            <Setter Property="FontSize" Value="17" />
+            <Setter Property="Height" Value="50" />
             <Style.Triggers>
                 <DataTrigger Binding="{Binding IsMonitoring}" Value="True">
                     <Setter Property="Background" Value="{StaticResource TextBrush}" />
@@ -67,11 +67,11 @@
         </Style>
     </Window.Resources>
 
-    <Grid Margin="20">
+    <Grid Margin="16">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="20" />
-            <ColumnDefinition Width="400" />
+            <ColumnDefinition Width="14" />
+            <ColumnDefinition Width="340" />
         </Grid.ColumnDefinitions>
 
         <!-- ═════════════ 左侧：摄像头画面 ═════════════ -->
@@ -231,8 +231,8 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <!-- 计数 -->
-            <Border Style="{StaticResource Card}">
+            <!-- 计数：一行显示，尽量少占高度 -->
+            <Border Style="{StaticResource Card}" Padding="14,10,14,12">
                 <StackPanel>
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -240,25 +240,24 @@
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="{Binding Count}" FontSize="60" FontWeight="Bold" LineHeight="62"
+                            <TextBlock Text="{Binding Count}" FontSize="40" FontWeight="Bold" LineHeight="44"
                                        LineStackingStrategy="BlockLineHeight" />
-                            <TextBlock FontSize="26" FontWeight="SemiBold" Foreground="{StaticResource MutedBrush}"
-                                       VerticalAlignment="Bottom" Margin="8,0,0,8">
+                            <TextBlock FontSize="19" FontWeight="SemiBold" Foreground="{StaticResource MutedBrush}"
+                                       VerticalAlignment="Bottom" Margin="6,0,0,6">
                                 <Run Text="/" />
                                 <Run Text="{Binding TargetBlinks, Mode=OneWay, StringFormat={}{0:0}}" />
                             </TextBlock>
                         </StackPanel>
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="22,0,0,0">
-                            <TextBlock Text="连续眨眼" Style="{StaticResource Muted}" FontSize="14" FontWeight="SemiBold" />
-                            <ItemsControl ItemsSource="{Binding Dots}" Focusable="False" Margin="0,10,0,0">
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="16,0,0,0">
+                            <ItemsControl ItemsSource="{Binding Dots}" Focusable="False">
                                 <ItemsControl.ItemsPanel>
                                     <ItemsPanelTemplate>
-                                        <WrapPanel />
+                                        <StackPanel Orientation="Horizontal" />
                                     </ItemsPanelTemplate>
                                 </ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <Ellipse x:Name="Dot" Width="14" Height="14" Margin="0,0,7,4"
+                                        <Ellipse x:Name="Dot" Width="12" Height="12" Margin="0,0,6,0"
                                                  Fill="{StaticResource LineBrush}" />
                                         <DataTemplate.Triggers>
                                             <DataTrigger Binding="{Binding IsOn}" Value="True">
@@ -268,26 +267,26 @@
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
+                            <TextBlock Text="{Binding RuleText}" Style="{StaticResource Muted}" Margin="0,6,0,0"
+                                       TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
                         </StackPanel>
                     </Grid>
-                    <ProgressBar Style="{StaticResource Meter}" Height="6" Margin="0,12,0,8"
+                    <ProgressBar Style="{StaticResource Meter}" Height="4" Margin="0,8,0,0"
                                  Value="{Binding WindowRemaining, Mode=OneWay}" />
-                    <TextBlock Text="{Binding RuleText}" Style="{StaticResource Muted}" />
-                    <TextBlock Text="{Binding LastAlarmText}" Style="{StaticResource Muted}" Margin="0,2,0,0" />
                 </StackPanel>
             </Border>
 
             <!-- 开始 / 停止 -->
             <Button Grid.Row="1" Style="{StaticResource MonitorButton}" Command="{Binding ToggleMonitorCommand}"
-                    Margin="0,16" />
+                    Margin="0,12" />
 
             <!-- 设置 -->
-            <Border Grid.Row="2" Style="{StaticResource Card}" Padding="16">
+            <Border Grid.Row="2" Style="{StaticResource Card}" Padding="12">
                 <TabControl Style="{StaticResource SegmentTabs}" x:Name="SettingsTabs">
                     <TabItem Header="触发" Style="{StaticResource SegmentTab}">
-                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="4,0,8,0">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="2,0,8,0">
                             <StackPanel>
-                                <HeaderedContentControl Style="{StaticResource Row}" Header="灵敏度" Margin="0,7,0,0">
+                                <HeaderedContentControl Style="{StaticResource Row}" Header="灵敏度" Margin="0,5,0,0">
                                     <TextBlock Text="{Binding Sensitivity, StringFormat={}{0:0}}" FontSize="17" FontWeight="SemiBold"
                                                Foreground="{StaticResource AccentBrush}" />
                                 </HeaderedContentControl>
@@ -310,7 +309,7 @@
                     </TabItem>
 
                     <TabItem Header="报警" Style="{StaticResource SegmentTab}">
-                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="4,0,8,0">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="2,0,8,0">
                             <StackPanel>
                                 <HeaderedContentControl Style="{StaticResource Row}" Header="本机声音报警">
                                     <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding SoundEnabled}" />
@@ -324,7 +323,7 @@
                                 </HeaderedContentControl>
 
                                 <HeaderedContentControl Style="{StaticResource Row}" Header="报警声音">
-                                    <TextBlock Text="{Binding SoundFileText}" FontSize="15" MaxWidth="230"
+                                    <TextBlock Text="{Binding SoundFileText}" FontSize="15" MaxWidth="180"
                                                Foreground="{StaticResource MutedBrush}" TextTrimming="CharacterEllipsis" />
                                 </HeaderedContentControl>
                                 <Grid>
@@ -354,19 +353,62 @@
                         </ScrollViewer>
                     </TabItem>
 
+                    <TabItem Header="外设" Style="{StaticResource SegmentTab}">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="2,0,8,0">
+                            <StackPanel>
+                                <HeaderedContentControl Style="{StaticResource Row}" Header="USB 继电器外接警报器">
+                                    <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding RelayEnabled}" />
+                                </HeaderedContentControl>
+
+                                <DockPanel Margin="0,8,0,6">
+                                    <Button DockPanel.Dock="Right" Style="{StaticResource SecondaryButton}" Content="刷新"
+                                            MinHeight="30" Padding="12,0" FontSize="13"
+                                            Command="{Binding RefreshRelayPortsCommand}" />
+                                    <TextBlock Text="继电器所在串口" Style="{StaticResource SectionTitle}" Margin="0"
+                                               VerticalAlignment="Center" />
+                                </DockPanel>
+                                <Border Background="{StaticResource SubtleBrush}" CornerRadius="10" Padding="3">
+                                    <Grid>
+                                        <ItemsControl ItemsSource="{Binding RelayPorts}" Focusable="False">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <WrapPanel />
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <RadioButton Style="{StaticResource Choice}" GroupName="RelayPort"
+                                                                 Content="{Binding Name}" IsChecked="{Binding IsSelected}" />
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                        <TextBlock Text="未发现串口" Style="{StaticResource Muted}" Margin="10,6"
+                                                   Visibility="{Binding HasNoRelayPorts, Converter={StaticResource Show}}" />
+                                    </Grid>
+                                </Border>
+
+                                <Button Style="{StaticResource PrimaryButton}" Content="测试警报器（响约 1 秒）" Margin="0,12,0,0"
+                                        Command="{Binding TestRelayCommand}" />
+                                <TextBlock Text="{Binding RelayStatus}" Style="{StaticResource Muted}" Margin="0,8,0,0" />
+                                <TextBlock Style="{StaticResource Muted}" Margin="0,8,0,0"
+                                           Text="适用 LCUS-1 型 USB 继电器（CH340，9600bps）。报警时继电器吸合，停止报警时断开。继电器触点用来接通独立供电的警报器，不能直接用 USB 给警报器供电。" />
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+
                     <TabItem Header="联动" Style="{StaticResource SegmentTab}">
-                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="4,0,8,0">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="2,0,8,0">
                             <StackPanel>
                                 <HeaderedContentControl Style="{StaticResource Row}" Header="报警时通知外部设备">
                                     <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding WebhookEnabled}" />
                                 </HeaderedContentControl>
-                                <TextBlock Text="Webhook 地址（Home Assistant、米家等）" Style="{StaticResource SectionTitle}"
+                                <TextBlock Text="Webhook 地址（Home Assistant 等）" Style="{StaticResource SectionTitle}"
                                            Margin="0,8,0,6" />
                                 <TextBox Style="{StaticResource Input}"
                                          Text="{Binding WebhookUrl, UpdateSourceTrigger=PropertyChanged}" />
 
                                 <HeaderedContentControl Style="{StaticResource Row}" Header="请求方式" Margin="0,12,0,0">
-                                    <Border Background="{StaticResource SubtleBrush}" CornerRadius="12" Padding="4">
+                                    <Border Background="{StaticResource SubtleBrush}" CornerRadius="10" Padding="3">
                                         <StackPanel Orientation="Horizontal">
                                             <RadioButton Style="{StaticResource Choice}" Content="POST" GroupName="Method"
                                                          IsChecked="{Binding WebhookIsPost}" />
@@ -388,14 +430,14 @@
                     </TabItem>
 
                     <TabItem Header="画面" Style="{StaticResource SegmentTab}">
-                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="4,0,8,0">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="2,0,8,0">
                             <StackPanel>
                                 <HeaderedContentControl Style="{StaticResource Row}" Header="摄像头编号">
                                     <controls:Stepper Value="{Binding CameraIndex}" Minimum="0" Maximum="9" />
                                 </HeaderedContentControl>
                                 <TextBlock Style="{StaticResource Muted}"
                                            Text="内置摄像头一般是 0，外接 USB 摄像头请尝试 1、2…" />
-                                <HeaderedContentControl Style="{StaticResource Row}" Header="镜像显示" Margin="0,12,0,7">
+                                <HeaderedContentControl Style="{StaticResource Row}" Header="镜像显示" Margin="0,8,0,5">
                                     <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding Mirror}" />
                                 </HeaderedContentControl>
                                 <HeaderedContentControl Style="{StaticResource Row}" Header="显示眼睛轮廓">
@@ -413,15 +455,15 @@
                     </TabItem>
 
                     <TabItem Header="高级" Style="{StaticResource SegmentTab}">
-                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="4,0,8,0">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="2,0,8,0">
                             <StackPanel>
                                 <HeaderedContentControl Style="{StaticResource Row}" Header="最短闭眼">
                                     <controls:Stepper Value="{Binding MinClosedMs}" Minimum="30" Maximum="300" Step="10"
-                                                      Unit="毫秒" ValueWidth="84" />
+                                                      Unit="毫秒" ValueWidth="76" />
                                 </HeaderedContentControl>
                                 <HeaderedContentControl Style="{StaticResource Row}" Header="最长闭眼">
                                     <controls:Stepper Value="{Binding MaxClosedMs}" Minimum="400" Maximum="3000" Step="100"
-                                                      Unit="毫秒" ValueWidth="84" />
+                                                      Unit="毫秒" ValueWidth="76" />
                                 </HeaderedContentControl>
                                 <TextBlock Style="{StaticResource Muted}" Margin="0,4,0,0"
                                            Text="一般无需修改。闭眼时间短于「最短」视为抖动，长于「最长」视为闭眼休息，都不计入眨眼次数。" />
@@ -431,8 +473,12 @@
                 </TabControl>
             </Border>
 
-            <TextBlock Grid.Row="3" Text="{Binding FooterText}" Style="{StaticResource Muted}" FontSize="12"
-                       HorizontalAlignment="Center" Margin="0,10,0,0" />
+            <DockPanel Grid.Row="3" Margin="2,8,2,0">
+                <TextBlock DockPanel.Dock="Right" Text="{Binding FooterText}" Style="{StaticResource Muted}" FontSize="12"
+                           TextWrapping="NoWrap" />
+                <TextBlock Text="{Binding LastAlarmText}" Style="{StaticResource Muted}" FontSize="12"
+                           TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="0,0,10,0" />
+            </DockPanel>
         </Grid>
     </Grid>
 </Window>

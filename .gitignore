@@ -5,3 +5,6 @@ obj/
 publish/
 selftest/
 config.json
+publish-lite/
+selftest-lite/
+*.zip

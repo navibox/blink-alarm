@@ -37,7 +37,10 @@ static class SelfTest
             using (var mat = new OpenCvSharp.Mat(4, 4, OpenCvSharp.MatType.CV_8UC3))
                 if (mat.Empty()) throw new InvalidOperationException("OpenCV 原生库不可用。");
 
-            // 3. 界面：使用临时设置文件，不影响用户自己的 config.json。
+            // 3. 串口库（USB 继电器用）。
+            System.IO.Ports.SerialPort.GetPortNames();
+
+            // 4. 界面：使用临时设置文件，不影响用户自己的 config.json。
             var store = new SettingsStore(Path.Combine(outputDirectory, "self-test-config.json"));
             var viewModel = new MainViewModel(store);
             var window = new MainWindow(viewModel) { WindowStartupLocation = WindowStartupLocation.Manual, Left = 0, Top = 0 };
@@ -64,7 +67,7 @@ static class SelfTest
 
             viewModel.ShowAlarmPreview();
             Settle();
-            Capture(window, Path.Combine(outputDirectory, "7-alarm.png"));
+            Capture(window, Path.Combine(outputDirectory, "8-alarm.png"));
 
             window.Close();
             File.WriteAllText(resultFile, "OK");

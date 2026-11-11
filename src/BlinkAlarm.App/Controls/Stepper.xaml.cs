@@ -19,7 +19,7 @@ public partial class Stepper : UserControl
     public static readonly DependencyProperty UnitProperty = DependencyProperty.Register(
         nameof(Unit), typeof(string), typeof(Stepper), new PropertyMetadata("", OnChanged));
     public static readonly DependencyProperty ValueWidthProperty = DependencyProperty.Register(
-        nameof(ValueWidth), typeof(double), typeof(Stepper), new PropertyMetadata(64.0));
+        nameof(ValueWidth), typeof(double), typeof(Stepper), new PropertyMetadata(58.0));
     public static readonly DependencyProperty DisplayProperty = DependencyProperty.Register(
         nameof(Display), typeof(string), typeof(Stepper), new PropertyMetadata("0"));
 

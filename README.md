@@ -7,7 +7,8 @@
 - 识别：MediaPipe Face Mesh（478 点面部关键点）模型，经 **ONNX Runtime** 在本机推理，不联网、不上传画面
 - 判定：对左右眼分别计算 EAR（眼睛纵横比），与校准得到的睁眼基准相除，得到**眼睛开合度**；经「睁眼 → 闭眼 → 重新睁眼」状态机确认一次完整眨眼
 - 界面：全新的简洁界面，大按钮、大字号，方便用**眼控仪**操作
-- 发布：单个 `BlinkAlarm.exe`，自带运行库和模型，**不需要安装 Python 或 .NET**
+- 报警：本机警笛声、USB 继电器外接警报器、Home Assistant 等 Webhook 联动，可同时使用
+- 发布：单个 `BlinkAlarm.exe`，完整版自带运行库和模型，**不需要安装 Python 或 .NET**
 
 > **安全说明**：本软件是实验性辅助工具，不是经过认证的医疗报警设备，**不能作为唯一的求助途径**。
 > 请务必在实际使用者、实际摄像头和实际光线下长时间试用，调好灵敏度后再依赖它，并保留呼叫铃、照护者巡视等独立的求助方式。
@@ -15,10 +16,16 @@
 ## 一、下载
 
 1. 打开本仓库顶部的 **Actions** 标签，点进最新一次带绿色 ✅ 的「自动编译 Windows 程序」。
-2. 在页面底部 **Artifacts** 区域下载 **BlinkAlarm-Windows**（zip），解压得到 `BlinkAlarm.exe`。
+2. 在页面底部 **Artifacts** 区域下载，二选一，解压得到 `BlinkAlarm.exe`：
+
+   | 下载项 | 说明 |
+   | --- | --- |
+   | **BlinkAlarm-Windows** | 完整版。自带运行库，下载即用，体积较大。**不确定选哪个就选它。** |
+   | **BlinkAlarm-Windows-Lite** | 精简版。体积约为完整版的三分之一，功能完全相同，但电脑需要先安装 [.NET 8 桌面运行库](https://dotnet.microsoft.com/download/dotnet/8.0)（选 “.NET Desktop Runtime” x64）。 |
+
 3. 放到任意文件夹，双击运行。要求 Windows 10 / 11（64 位）。
 
-想给别人一个固定的下载地址：在仓库里 `Releases → Draft a new release`，填一个 tag（如 `v2.0.0`）发布，GitHub 会自动编译并把 exe 挂到该 Release 上。
+想给别人一个固定的下载地址：在仓库里 `Releases → Draft a new release`，填一个 tag（如 `v2.0.0`）发布，GitHub 会自动编译并把完整版 `BlinkAlarm.exe` 和精简版 `BlinkAlarm-Lite.zip` 挂到该 Release 上。
 
 - 首次打开稍慢（要解压内置组件），属正常现象。
 - 如果 Windows 提示「已保护你的电脑」，点「更多信息 → 仍要运行」。
@@ -51,6 +58,17 @@
 - 默认播放内置的双音警笛声，持续「报警时长」后自动停止；打开「一直响到手动停止」则持续到有人按下停止。
 - 可以选择自己的 `.wav` 文件作为报警声；文件无法播放时自动改用内置警笛。
 - 「试听报警声」用于确认音量——请在使用者的房间里实际试听，确认照护者能听到。
+
+**外设（USB 继电器外接警报器）**
+
+用一个 USB 继电器控制独立供电的声光警报器，让隔壁房间也能听到。
+
+1. 适用 LCUS-1 型 USB 继电器（CH340 芯片，9600bps）。插上后如果电脑不识别，请安装 CH340 驱动。
+2. 在「外设」页打开开关，选择继电器所在的串口（如 `COM3`；刚插上没看到就点「刷新」）。
+3. 点「测试警报器」，继电器会吸合约 1 秒。
+4. 报警时继电器吸合，停止报警（或报警时长到了）时断开。
+
+> 继电器触点只是一个开关，用来接通警报器自己的电源（如 12V）。不要试图用 USB 直接给警报器供电。
 
 **联动（Home Assistant / 米家）**
 
@@ -96,7 +114,7 @@ Face Mesh 478 点关键点（每帧运行；用上一帧的关键点跟踪下一
 每只眼睛一个状态机：开合度低于「闭眼阈值」→ 闭眼；回升到「睁眼阈值」→ 完成一次眨眼
 （闭眼时长需在 最短~最长 之间；两只眼睛 250 毫秒内完成的算同一次）
    ▼
-时间窗口内累计达到目标次数 → 报警（声音 + Webhook）→ 进入冷却
+时间窗口内累计达到目标次数 → 报警（声音 + USB 继电器 + Webhook）→ 进入冷却
 ```
 
 报警判定全部在后台检测线程完成，不受界面卡顿影响。
@@ -115,7 +133,7 @@ dotnet run --project src/BlinkAlarm.App  # 运行程序（Windows）
 | `src/BlinkAlarm.Core` | 与界面无关的核心库：人脸关键点（`Vision/`）、眨眼判定与计数（`Blink/`）、Webhook 与警笛声（`Alarm/`）、设置（`Settings/`）、ONNX 模型（`Models/`） |
 | `src/BlinkAlarm.App` | WPF 界面：`MainWindow.xaml`、主题样式（`Themes/`）、检测线程与声音（`Services/`）、视图模型（`ViewModels/`） |
 | `tests/BlinkAlarm.Tests` | xUnit 测试 |
-| `.github/workflows/build.yml` | 自动编译：测试 → 发布单文件 exe → 自检并截图 → 上传 |
+| `.github/workflows/build.yml` | 自动编译：测试 → 发布完整版和精简版 exe → 自检并截图 → 上传 |
 
 发布后的 exe 支持 `BlinkAlarm.exe --self-test <输出文件夹>`：加载模型和原生库、把每个界面渲染一遍并保存截图，结果写入 `result.txt`。CI 用它确认打包出来的程序确实能启动。
 

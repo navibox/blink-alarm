@@ -21,6 +21,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     readonly MonitorEngine engine;
     readonly SoundAlarm sound = new();
     readonly WebhookSender webhook = new();
+    readonly RelayAlarm relay = new();
     readonly Dispatcher dispatcher;
     readonly DispatcherTimer saveTimer, alarmTimer, testTimer;
     bool restartPending, disposed;
@@ -55,7 +56,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         ClearSoundCommand = new RelayCommand(() => SoundFile = "", () => SoundFile.Length > 0);
         TestWebhookCommand = new RelayCommand(() => _ = SendWebhookAsync(true), () => !IsSendingWebhook);
 
+        RefreshRelayPortsCommand = new RelayCommand(RefreshRelayPorts);
+        TestRelayCommand = new RelayCommand(() => _ = TestRelayAsync(), () => RelayEnabled && !IsTestingRelay && !AlarmActive);
+
         RebuildDots();
+        RefreshRelayPorts();
     }
 
     // ───────────────────────── 运行状态 ─────────────────────────
@@ -63,7 +68,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     bool isMonitoring, isStopping, alarmActive, isTestingSound, isSendingWebhook, hasPreview, isCalibrating;
     bool leftClosed, rightClosed;
     string statusText = "未开始监测", statusTone = "idle", errorText = "", webhookStatus = "", footerText = "设置会自动保存";
-    string lastAlarmText = "尚未触发报警";
+    string lastAlarmText = "尚未报警";
     int count, triggerCount, frameWidth = 640, frameHeight = 480;
     double leftOpenness, rightOpenness, windowRemaining, calibrationProgress;
     WriteableBitmap? preview;
@@ -76,6 +81,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     public ICommand BrowseSoundCommand { get; }
     public ICommand ClearSoundCommand { get; }
     public ICommand TestWebhookCommand { get; }
+    public ICommand RefreshRelayPortsCommand { get; }
+    public ICommand TestRelayCommand { get; }
 
     /// <summary>报警触发时通知窗口把自己切到最前面。</summary>
     public event Action? AlarmRaised;
@@ -153,7 +160,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     public string RuleText => $"{settings.BlinkWindowSeconds:0} 秒内眨眼 {settings.TargetBlinks} 次即报警";
 
-    public string ThresholdText => $"眼睛开合度低于 {BuildOptions().Blink.CloseRatio:P0} 时判定为闭眼。数值越高越容易触发。";
+    public string ThresholdText => $"开合度低于 {BuildOptions().Blink.CloseRatio:P0} 判定为闭眼，越高越容易触发";
 
     public double TargetBlinks
     {
@@ -203,6 +210,99 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     public bool WebhookIsPost { get => settings.WebhookMethod == "POST"; set { if (value) SetWebhookMethod("POST"); } }
     public bool WebhookIsGet { get => settings.WebhookMethod == "GET"; set { if (value) SetWebhookMethod("GET"); } }
 
+    // ── USB 继电器外接警报器 ──
+
+    bool isTestingRelay;
+    string relayStatus = "";
+
+    public ObservableCollection<RelayPortOption> RelayPorts { get; } = new();
+    public bool HasNoRelayPorts => RelayPorts.Count == 0;
+    public string RelayStatus { get => relayStatus; private set => Set(ref relayStatus, value); }
+    public bool IsTestingRelay { get => isTestingRelay; private set { if (Set(ref isTestingRelay, value)) CommandManager.InvalidateRequerySuggested(); } }
+
+    public bool RelayEnabled
+    {
+        get => settings.RelayEnabled;
+        set
+        {
+            if (settings.RelayEnabled == value) return;
+            settings.RelayEnabled = value;
+            SettingChanged();
+            CommandManager.InvalidateRequerySuggested();
+            if (value) ConnectRelay();
+            else
+            {
+                relay.Disconnect();
+                RelayStatus = "未启用";
+            }
+        }
+    }
+
+    /// <summary>重新列出电脑上的串口，并保持（或恢复）之前选中的那个。</summary>
+    void RefreshRelayPorts()
+    {
+        string[] names = RelayAlarm.GetPortNames();
+        if (settings.RelayPort.Length == 0 && names.Length > 0)
+        {
+            settings.RelayPort = names[0];
+            SettingChanged(nameof(RelayPorts));
+        }
+        RelayPorts.Clear();
+        foreach (string name in names)
+            RelayPorts.Add(new RelayPortOption(name, string.Equals(name, settings.RelayPort, StringComparison.OrdinalIgnoreCase), SelectRelayPort));
+        Raise(nameof(HasNoRelayPorts));
+
+        if (settings.RelayEnabled) ConnectRelay();
+        else RelayStatus = "未启用";
+    }
+
+    void SelectRelayPort(string name)
+    {
+        if (settings.RelayPort == name) return;
+        settings.RelayPort = name;
+        SettingChanged(nameof(RelayPorts));
+        if (settings.RelayEnabled) ConnectRelay();
+    }
+
+    /// <returns>继电器是否已连接可用。</returns>
+    bool ConnectRelay()
+    {
+        if (settings.RelayPort.Length == 0)
+        {
+            RelayStatus = "未发现串口：请插入 USB 继电器并安装 CH340 驱动，然后点「刷新」";
+            return false;
+        }
+        string? error = relay.Connect(settings.RelayPort);
+        RelayStatus = error is null ? $"✓ 已连接 {settings.RelayPort}" : $"✕ 无法连接 {settings.RelayPort}：{error}";
+        return error is null;
+    }
+
+    void SetRelay(bool on)
+    {
+        if (on && !relay.IsConnected && !ConnectRelay()) return;
+        if (!relay.IsConnected) return;
+        string? error = relay.Set(on);
+        RelayStatus = error is not null ? $"✕ 继电器控制失败：{error}"
+            : on ? "外接警报器已启动" : $"✓ 已连接 {settings.RelayPort}";
+    }
+
+    async Task TestRelayAsync()
+    {
+        if (!RelayEnabled || AlarmActive || IsTestingRelay) return;
+        IsTestingRelay = true;
+        try
+        {
+            SetRelay(true);
+            await Task.Delay(1200);
+            // 测试期间如果真的触发了报警，就让警报器继续响。
+            if (!AlarmActive && !disposed) SetRelay(false);
+        }
+        finally
+        {
+            IsTestingRelay = false;
+        }
+    }
+
     void SetWebhookMethod(string method)
     {
         if (settings.WebhookMethod == method) return;
@@ -227,7 +327,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     void SaveNow()
     {
         saveTimer.Stop();
-        FooterText = store.Save(settings) is null ? "⚠ 设置无法保存：程序文件夹不可写" : "设置会自动保存";
+        FooterText = store.Save(settings) is null ? "⚠ 设置无法保存" : "设置会自动保存";
     }
 
     void RebuildDots()
@@ -363,10 +463,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         if (disposed || AlarmActive) return;
         StopSoundTest();
         triggerCount++;
-        LastAlarmText = $"已触发报警 {triggerCount} 次 · 最近一次 {DateTime.Now:HH:mm:ss}";
+        LastAlarmText = $"已报警 {triggerCount} 次 · 最近 {DateTime.Now:HH:mm:ss}";
         AlarmActive = true;
 
         if (settings.SoundEnabled) sound.Play(settings.SoundFile);
+        if (settings.RelayEnabled) SetRelay(true);
         alarmTimer.Stop();
         if (!settings.AlarmUntilStopped)
         {
@@ -383,6 +484,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         alarmTimer.Stop();
         if (!AlarmActive) return;
         sound.Stop();
+        SetRelay(false);
         AlarmActive = false;
     }
 
@@ -470,5 +572,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         testTimer.Stop();
         engine.Stop();
         sound.Dispose();
+        relay.Dispose();
     }
 }

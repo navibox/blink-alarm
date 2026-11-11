@@ -47,3 +47,25 @@ public sealed class BlinkDot : ObservableObject
     bool isOn;
     public bool IsOn { get => isOn; set => Set(ref isOn, value); }
 }
+
+/// <summary>"外设"页里可选的一个串口。</summary>
+public sealed class RelayPortOption : ObservableObject
+{
+    readonly Action<string> select;
+    bool isSelected;
+
+    public RelayPortOption(string name, bool isSelected, Action<string> select)
+    {
+        Name = name;
+        this.isSelected = isSelected;
+        this.select = select;
+    }
+
+    public string Name { get; }
+
+    public bool IsSelected
+    {
+        get => isSelected;
+        set { if (Set(ref isSelected, value) && value) select(Name); }
+    }
+}

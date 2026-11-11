@@ -39,6 +39,13 @@ jobs:
           -p:EnableCompressionInSingleFile=true -p:DebugType=None -p:DebugSymbols=false
           -o publish
 
+      - name: 打包精简版（体积小，需要电脑已安装 .NET 8 桌面运行库）
+        run: >
+          dotnet publish src/BlinkAlarm.App -c Release -r win-x64 --self-contained false
+          -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:DebugType=None -p:DebugSymbols=false
+          -o publish-lite
+
       - name: 自检（加载模型、渲染界面并截图）
         shell: pwsh
         run: |
@@ -47,13 +54,23 @@ jobs:
           if (-not $process.WaitForExit(120000)) { $process.Kill(); throw "自检超时" }
           if (Test-Path "$out\result.txt") { Get-Content "$out\result.txt" -Encoding UTF8 }
           if ($process.ExitCode -ne 0) { throw "自检失败，退出码 $($process.ExitCode)" }
-          Get-ChildItem publish, $out | Format-Table Name, Length
+
+          $liteOut = Join-Path $PWD "selftest-lite"
+          $lite = Start-Process -FilePath "publish-lite\BlinkAlarm.exe" -ArgumentList "--self-test", "`"$liteOut`"" -PassThru
+          if (-not $lite.WaitForExit(120000)) { $lite.Kill(); throw "精简版自检超时" }
+          if (Test-Path "$liteOut\result.txt") { Get-Content "$liteOut\result.txt" -Encoding UTF8 }
+          if ($lite.ExitCode -ne 0) { throw "精简版自检失败，退出码 $($lite.ExitCode)" }
+
+          Compress-Archive -Path publish-lite\BlinkAlarm.exe -DestinationPath BlinkAlarm-Lite.zip
+          Get-ChildItem publish\BlinkAlarm.exe, publish-lite\BlinkAlarm.exe, BlinkAlarm-Lite.zip | Format-Table Name, @{ n = "MB"; e = { [math]::Round($_.Length / 1MB, 1) } }
 
       - name: 附带许可证
         shell: pwsh
         run: |
-          Copy-Item THIRD-PARTY-NOTICES.md publish/
-          Copy-Item ThirdPartyLicenses/Apache-2.0.txt publish/
+          foreach ($dir in "publish", "publish-lite") {
+            Copy-Item THIRD-PARTY-NOTICES.md $dir
+            Copy-Item ThirdPartyLicenses/Apache-2.0.txt $dir
+          }
 
       - name: 上传可执行文件（供下载）
         uses: actions/upload-artifact@v4
@@ -63,6 +80,17 @@ jobs:
             publish/BlinkAlarm.exe
             publish/THIRD-PARTY-NOTICES.md
             publish/Apache-2.0.txt
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: 上传精简版（需要 .NET 8 桌面运行库）
+        uses: actions/upload-artifact@v4
+        with:
+          name: BlinkAlarm-Windows-Lite
+          path: |
+            publish-lite/BlinkAlarm.exe
+            publish-lite/THIRD-PARTY-NOTICES.md
+            publish-lite/Apache-2.0.txt
           if-no-files-found: error
           retention-days: 30
 
@@ -78,7 +106,9 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: publish/BlinkAlarm.exe
+          files: |
+            publish/BlinkAlarm.exe
+            BlinkAlarm-Lite.zip
           generate_release_notes: true
 
       # 调试用：无法下载 Artifacts 的环境（如云端编程助手）可以从日志里取回一张缩小的界面截图。

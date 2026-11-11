@@ -150,3 +150,15 @@ public class SirenWaveTests
         Assert.Equal(44100, BitConverter.ToInt32(wav, 24));
     }
 }
+
+public class RelayProtocolTests
+{
+    [Fact]
+    public void MatchesLcus1Commands()
+    {
+        Assert.Equal(new byte[] { 0xA0, 0x01, 0x01, 0xA2 }, RelayProtocol.Command(true));
+        Assert.Equal(new byte[] { 0xA0, 0x01, 0x00, 0xA1 }, RelayProtocol.Command(false));
+        Assert.Equal(new byte[] { 0xA0, 0x02, 0x01, 0xA3 }, RelayProtocol.Command(true, 2));
+        Assert.Throws<ArgumentOutOfRangeException>(() => RelayProtocol.Command(true, 0));
+    }
+}
