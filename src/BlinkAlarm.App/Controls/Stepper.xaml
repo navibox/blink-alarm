@@ -1,0 +1,14 @@
+<UserControl x:Class="BlinkAlarm.App.Controls.Stepper"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Name="Root" Focusable="False">
+    <StackPanel Orientation="Horizontal">
+        <RepeatButton x:Name="MinusButton" Style="{StaticResource StepButton}" Content="−" Click="OnMinus"
+                      ToolTip="减少" />
+        <TextBlock Text="{Binding Display, ElementName=Root}" MinWidth="{Binding ValueWidth, ElementName=Root}"
+                   TextAlignment="Center" VerticalAlignment="Center" Margin="4,0"
+                   FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" />
+        <RepeatButton x:Name="PlusButton" Style="{StaticResource StepButton}" Content="+" Click="OnPlus"
+                      ToolTip="增加" />
+    </StackPanel>
+</UserControl>

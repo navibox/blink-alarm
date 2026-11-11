@@ -1,0 +1,10 @@
+bin/
+obj/
+.vs/
+*.user
+publish/
+selftest/
+config.json
+publish-lite/
+selftest-lite/
+*.zip

@@ -2,54 +2,139 @@ name: 自动编译 Windows 程序
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, "claude/**" ]
     tags: [ "v*" ]
+  pull_request:
   workflow_dispatch:
+    inputs:
+      print_screenshot:
+        description: "调试用：把自检截图输出到日志（文件名前缀如 2-tab1，或 all 表示全部；留空则不输出）"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
 
 jobs:
   build-windows:
     runs-on: windows-latest
-    timeout-minutes: 60
+    timeout-minutes: 30
 
     steps:
       - name: 拉取代码
         uses: actions/checkout@v4
 
-      - name: 安装 Python 3.11
-        uses: actions/setup-python@v5
+      - name: 安装 .NET 8 SDK
+        uses: actions/setup-dotnet@v4
         with:
-          python-version: "3.11"
+          dotnet-version: "8.0.x"
 
-      - name: 安装依赖
+      - name: 运行单元测试（眨眼算法 + 模型推理）
+        run: dotnet test tests/BlinkAlarm.Tests -c Release
+
+      - name: 打包为单个 exe（自带 .NET 运行库，无需另外安装）
+        run: >
+          dotnet publish src/BlinkAlarm.App -c Release -r win-x64 --self-contained true
+          -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:EnableCompressionInSingleFile=true -p:DebugType=None -p:DebugSymbols=false
+          -o publish
+
+      - name: 打包精简版（体积小，需要电脑已安装 .NET 8 桌面运行库）
+        run: >
+          dotnet publish src/BlinkAlarm.App -c Release -r win-x64 --self-contained false
+          -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:DebugType=None -p:DebugSymbols=false
+          -o publish-lite
+
+      - name: 自检（加载模型、渲染界面并截图）
+        shell: pwsh
         run: |
-          python -m pip install --upgrade pip
-          pip install numpy Pillow
-          pip install mediapipe
-          # 解决冲突：mediapipe 自带 opencv，替换为 headless 版以减小体积
-          pip uninstall -y opencv-python opencv-contrib-python
-          pip install opencv-python-headless
-          pip install pyinstaller
+          $out = Join-Path $PWD "selftest"
+          $process = Start-Process -FilePath "publish\BlinkAlarm.exe" -ArgumentList "--self-test", "`"$out`"" -PassThru
+          if (-not $process.WaitForExit(120000)) { $process.Kill(); throw "自检超时" }
+          if (Test-Path "$out\result.txt") { Get-Content "$out\result.txt" -Encoding UTF8 }
+          if ($process.ExitCode -ne 0) { throw "自检失败，退出码 $($process.ExitCode)" }
 
-      - name: 验证依赖
+          $liteOut = Join-Path $PWD "selftest-lite"
+          $lite = Start-Process -FilePath "publish-lite\BlinkAlarm.exe" -ArgumentList "--self-test", "`"$liteOut`"" -PassThru
+          if (-not $lite.WaitForExit(120000)) { $lite.Kill(); throw "精简版自检超时" }
+          if (Test-Path "$liteOut\result.txt") { Get-Content "$liteOut\result.txt" -Encoding UTF8 }
+          if ($lite.ExitCode -ne 0) { throw "精简版自检失败，退出码 $($lite.ExitCode)" }
+
+          Compress-Archive -Path publish-lite\BlinkAlarm.exe -DestinationPath BlinkAlarm-Lite.zip
+          Get-ChildItem publish\BlinkAlarm.exe, publish-lite\BlinkAlarm.exe, BlinkAlarm-Lite.zip | Format-Table Name, @{ n = "MB"; e = { [math]::Round($_.Length / 1MB, 1) } }
+
+      - name: 附带许可证
+        shell: pwsh
         run: |
-          python -c "import cv2, numpy, PIL, mediapipe; print('dependencies OK')"
-
-      - name: 打包为 exe
-        run: pyinstaller --noconfirm BlinkAlarm.spec
-
-      - name: 生成校验信息
-        run: dir dist
+          foreach ($dir in "publish", "publish-lite") {
+            Copy-Item THIRD-PARTY-NOTICES.md $dir
+            Copy-Item ThirdPartyLicenses/Apache-2.0.txt $dir
+          }
 
       - name: 上传可执行文件（供下载）
         uses: actions/upload-artifact@v4
         with:
           name: BlinkAlarm-Windows
-          path: dist/BlinkAlarm.exe
+          path: |
+            publish/BlinkAlarm.exe
+            publish/THIRD-PARTY-NOTICES.md
+            publish/Apache-2.0.txt
+          if-no-files-found: error
           retention-days: 30
+
+      - name: 上传精简版（需要 .NET 8 桌面运行库）
+        uses: actions/upload-artifact@v4
+        with:
+          name: BlinkAlarm-Windows-Lite
+          path: |
+            publish-lite/BlinkAlarm.exe
+            publish-lite/THIRD-PARTY-NOTICES.md
+            publish-lite/Apache-2.0.txt
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: 上传界面截图
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: BlinkAlarm-Screenshots
+          path: selftest/
+          retention-days: 14
 
       - name: 发布 Release（仅在打 tag 时）
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/BlinkAlarm.exe
+          files: |
+            publish/BlinkAlarm.exe
+            BlinkAlarm-Lite.zip
           generate_release_notes: true
+
+      # 调试用：无法下载 Artifacts 的环境（如云端编程助手）可以从日志里取回一张缩小的界面截图。
+      - name: 在日志中输出截图
+        if: github.event_name == 'workflow_dispatch' && inputs.print_screenshot != ''
+        shell: pwsh
+        env:
+          SCREENSHOT: ${{ inputs.print_screenshot }}
+        run: |
+          Add-Type -AssemblyName System.Drawing
+          $pattern = if ($env:SCREENSHOT -eq 'all') { '*.png' } else { "$env:SCREENSHOT*.png" }
+          $files = @(Get-ChildItem selftest -Filter $pattern)
+          if ($files.Count -eq 0) { throw "没有找到截图：$env:SCREENSHOT" }
+          $codec = [System.Drawing.Imaging.ImageCodecInfo]::GetImageEncoders() | Where-Object MimeType -eq 'image/jpeg'
+          $quality = New-Object System.Drawing.Imaging.EncoderParameters 1
+          $quality.Param[0] = New-Object System.Drawing.Imaging.EncoderParameter ([System.Drawing.Imaging.Encoder]::Quality, 60L)
+          foreach ($file in $files) {
+            $source = [System.Drawing.Image]::FromFile($file.FullName)
+            $width = [int]($source.Width * 0.8); $height = [int]($source.Height * 0.8)
+            $bitmap = New-Object System.Drawing.Bitmap $width, $height
+            $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+            $graphics.InterpolationMode = 'HighQualityBicubic'
+            $graphics.DrawImage($source, 0, 0, $width, $height)
+            $stream = New-Object System.IO.MemoryStream
+            $bitmap.Save($stream, $codec, $quality)
+            "-----BEGIN SCREENSHOT $($file.Name)-----"
+            [Convert]::ToBase64String($stream.ToArray(), 'InsertLineBreaks')
+            "-----END SCREENSHOT-----"
+          }

@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>BlinkAlarm.Core</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.31.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Models\face_detector.onnx" LogicalName="face_detector.onnx" />
+    <EmbeddedResource Include="Models\face_landmarks_detector.onnx" LogicalName="face_landmarks_detector.onnx" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="BlinkAlarm.Tests" />
+  </ItemGroup>
+</Project>
