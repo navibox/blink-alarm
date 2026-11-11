@@ -14,6 +14,10 @@ public partial class MainWindow : Window
         DataContext = viewModel;
         InitializeComponent();
         viewModel.AlarmRaised += BringToFront;
+
+        // 小屏幕或高缩放比例下窗口放不下：直接最大化。
+        var workArea = SystemParameters.WorkArea;
+        if (Width > workArea.Width || Height > workArea.Height) WindowState = WindowState.Maximized;
     }
 
     /// <summary>报警时把窗口切到最前面，让"停止报警"按钮立即可见。</summary>

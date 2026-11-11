@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       print_screenshot:
-        description: "调试用：把指定的自检截图输出到日志（文件名前缀，如 2-tab1；留空则不输出）"
+        description: "调试用：把自检截图输出到日志（文件名前缀如 2-tab1，或 all 表示全部；留空则不输出）"
         required: false
         default: ""
 
@@ -89,19 +89,22 @@ jobs:
           SCREENSHOT: ${{ inputs.print_screenshot }}
         run: |
           Add-Type -AssemblyName System.Drawing
-          $file = Get-ChildItem selftest -Filter "$env:SCREENSHOT*.png" | Select-Object -First 1
-          if (-not $file) { throw "没有找到截图：$env:SCREENSHOT" }
-          $source = [System.Drawing.Image]::FromFile($file.FullName)
-          $width = [int]($source.Width * 0.7); $height = [int]($source.Height * 0.7)
-          $bitmap = New-Object System.Drawing.Bitmap $width, $height
-          $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
-          $graphics.InterpolationMode = 'HighQualityBicubic'
-          $graphics.DrawImage($source, 0, 0, $width, $height)
+          $pattern = if ($env:SCREENSHOT -eq 'all') { '*.png' } else { "$env:SCREENSHOT*.png" }
+          $files = @(Get-ChildItem selftest -Filter $pattern)
+          if ($files.Count -eq 0) { throw "没有找到截图：$env:SCREENSHOT" }
           $codec = [System.Drawing.Imaging.ImageCodecInfo]::GetImageEncoders() | Where-Object MimeType -eq 'image/jpeg'
           $quality = New-Object System.Drawing.Imaging.EncoderParameters 1
-          $quality.Param[0] = New-Object System.Drawing.Imaging.EncoderParameter ([System.Drawing.Imaging.Encoder]::Quality, 55L)
-          $stream = New-Object System.IO.MemoryStream
-          $bitmap.Save($stream, $codec, $quality)
-          "-----BEGIN SCREENSHOT $($file.Name)-----"
-          [Convert]::ToBase64String($stream.ToArray(), 'InsertLineBreaks')
-          "-----END SCREENSHOT-----"
+          $quality.Param[0] = New-Object System.Drawing.Imaging.EncoderParameter ([System.Drawing.Imaging.Encoder]::Quality, 60L)
+          foreach ($file in $files) {
+            $source = [System.Drawing.Image]::FromFile($file.FullName)
+            $width = [int]($source.Width * 0.8); $height = [int]($source.Height * 0.8)
+            $bitmap = New-Object System.Drawing.Bitmap $width, $height
+            $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+            $graphics.InterpolationMode = 'HighQualityBicubic'
+            $graphics.DrawImage($source, 0, 0, $width, $height)
+            $stream = New-Object System.IO.MemoryStream
+            $bitmap.Save($stream, $codec, $quality)
+            "-----BEGIN SCREENSHOT $($file.Name)-----"
+            [Convert]::ToBase64String($stream.ToArray(), 'InsertLineBreaks')
+            "-----END SCREENSHOT-----"
+          }

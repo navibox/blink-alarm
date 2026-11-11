@@ -64,7 +64,7 @@ static class SelfTest
 
             viewModel.ShowAlarmPreview();
             Settle();
-            Capture(window, Path.Combine(outputDirectory, "6-alarm.png"));
+            Capture(window, Path.Combine(outputDirectory, "7-alarm.png"));
 
             window.Close();
             File.WriteAllText(resultFile, "OK");
