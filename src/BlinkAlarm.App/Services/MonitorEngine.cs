@@ -122,7 +122,7 @@ public sealed class MonitorEngine
 
                 while (!token.IsCancellationRequested)
                 {
-                    if (!camera.Read(mat) || mat.Empty() || mat.Type() != MatType.CV_8UC3)
+                    if (!camera.Read(mat) || !ToBgr24(mat))
                     {
                         // 偶尔丢帧属正常；持续读不到画面则认为摄像头断开，释放后重连。
                         if (clock.Elapsed - lastFrame > ReadTimeout) break;
@@ -197,6 +197,19 @@ public sealed class MonitorEngine
             }
             Interlocked.Exchange(ref uiBusy, 0);
             Stopped?.Invoke(error);
+        }
+    }
+
+    /// <summary>把画面统一成 8 位 BGR（红外/灰度摄像头输出单通道，个别驱动输出 BGRA）。</summary>
+    static bool ToBgr24(Mat mat)
+    {
+        if (mat.Empty() || mat.Depth() != MatType.CV_8U) return false;
+        switch (mat.Channels())
+        {
+            case 3: return true;
+            case 1: Cv2.CvtColor(mat, mat, ColorConversionCodes.GRAY2BGR); return true;
+            case 4: Cv2.CvtColor(mat, mat, ColorConversionCodes.BGRA2BGR); return true;
+            default: return false;
         }
     }
 
