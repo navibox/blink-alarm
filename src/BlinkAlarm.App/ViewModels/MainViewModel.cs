@@ -158,6 +158,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
     }
 
+    public string VersionText { get; } =
+        "版本 " + (typeof(MainViewModel).Assembly.GetName().Version?.ToString(3) ?? "2.0.0");
+
     public string RuleText => $"{settings.BlinkWindowSeconds:0} 秒内眨眼 {settings.TargetBlinks} 次即报警";
 
     public string ThresholdText => $"开合度低于 {BuildOptions().Blink.CloseRatio:P0} 判定为闭眼，越高越容易触发";

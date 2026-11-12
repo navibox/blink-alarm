@@ -462,6 +462,58 @@
                             </StackPanel>
                         </ScrollViewer>
                     </TabItem>
+
+                    <TabItem Header="关于" Style="{StaticResource SegmentTab}">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="2,0,8,0">
+                            <StackPanel>
+                                <StackPanel.Resources>
+                                    <Style x:Key="AboutText" TargetType="TextBlock">
+                                        <Setter Property="FontSize" Value="13" />
+                                        <Setter Property="LineHeight" Value="19" />
+                                        <Setter Property="TextWrapping" Value="Wrap" />
+                                        <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+                                    </Style>
+                                    <Style x:Key="AboutTitle" TargetType="TextBlock">
+                                        <Setter Property="FontSize" Value="13" />
+                                        <Setter Property="FontWeight" Value="SemiBold" />
+                                        <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+                                        <Setter Property="Margin" Value="0,10,0,2" />
+                                    </Style>
+                                </StackPanel.Resources>
+
+                                <TextBlock Margin="0,6,0,0">
+                                    <Run Text="眨眼报警助手" FontSize="18" FontWeight="SemiBold" />
+                                    <Run Text=" Blink Alarm" FontSize="14" Foreground="{StaticResource MutedBrush}" />
+                                </TextBlock>
+                                <TextBlock Text="{Binding VersionText}" Style="{StaticResource Muted}" Margin="0,2,0,6" />
+
+                                <TextBlock Style="{StaticResource AboutText}"
+                                           Text="本软件由作者借助 AI 辅助开发，面向渐冻症（ALS）等全身瘫痪的患者，通过摄像头识别眨眼动作来触发报警、呼叫看护。" />
+
+                                <TextBlock Style="{StaticResource AboutTitle}" Text="开源免费，禁止售卖" />
+                                <TextBlock Style="{StaticResource AboutText}"
+                                           Text="本项目完全开源、永久免费，禁止任何形式的售卖。如果有人向您收费，请不要购买，谨防上当受骗。" />
+
+                                <TextBlock Style="{StaticResource AboutTitle}" Text="使用提示" />
+                                <TextBlock Style="{StaticResource AboutText}"
+                                           Text="本软件是辅助工具，不是经过认证的医疗报警设备，不能作为唯一的求助途径。请保留呼叫铃、照护者巡视等其它求助方式。" />
+
+                                <TextBlock Style="{StaticResource AboutTitle}" Text="联系作者" />
+                                <TextBlock Style="{StaticResource AboutText}" Text="欢迎提出开发建议和需求反馈。" />
+                                <TextBlock Style="{StaticResource AboutText}">
+                                    <Run Text="项目地址：" /><Hyperlink NavigateUri="https://github.com/navibox/blink-alarm"
+                                        RequestNavigate="OnLinkClicked">github.com/navibox/blink-alarm</Hyperlink>
+                                </TextBlock>
+                                <TextBlock Style="{StaticResource AboutText}">
+                                    <Run Text="作者邮箱：" /><Hyperlink NavigateUri="mailto:lichoppy@gmail.com"
+                                        RequestNavigate="OnLinkClicked">lichoppy@gmail.com</Hyperlink>
+                                </TextBlock>
+
+                                <TextBlock Style="{StaticResource Muted}" FontSize="12" Margin="0,12,0,0"
+                                           Text="© 2026 navibox · 面部识别模型来自 Google MediaPipe（Apache-2.0）" />
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
                 </TabControl>
             </Border>
 
