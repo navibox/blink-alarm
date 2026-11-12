@@ -286,6 +286,11 @@
                     <TabItem Header="触发" Style="{StaticResource SegmentTab}">
                         <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="2,0,8,0">
                             <StackPanel>
+                                <HeaderedContentControl Style="{StaticResource Row}" Header="摄像头编号">
+                                    <controls:Stepper Value="{Binding CameraIndex}" Minimum="0" Maximum="9" />
+                                </HeaderedContentControl>
+                                <TextBlock Style="{StaticResource Muted}"
+                                           Text="内置摄像头一般是 0，外接 USB 摄像头请尝试 1、2…" />
                                 <HeaderedContentControl Style="{StaticResource Row}" Header="灵敏度" Margin="0,5,0,0">
                                     <TextBlock Text="{Binding Sensitivity, StringFormat={}{0:0}}" FontSize="17" FontWeight="SemiBold"
                                                Foreground="{StaticResource AccentBrush}" />
@@ -429,15 +434,10 @@
                         </ScrollViewer>
                     </TabItem>
 
-                    <TabItem Header="画面" Style="{StaticResource SegmentTab}">
+                    <TabItem Header="高级" Style="{StaticResource SegmentTab}">
                         <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="2,0,8,0">
                             <StackPanel>
-                                <HeaderedContentControl Style="{StaticResource Row}" Header="摄像头编号">
-                                    <controls:Stepper Value="{Binding CameraIndex}" Minimum="0" Maximum="9" />
-                                </HeaderedContentControl>
-                                <TextBlock Style="{StaticResource Muted}"
-                                           Text="内置摄像头一般是 0，外接 USB 摄像头请尝试 1、2…" />
-                                <HeaderedContentControl Style="{StaticResource Row}" Header="镜像显示" Margin="0,8,0,5">
+                                <HeaderedContentControl Style="{StaticResource Row}" Header="镜像显示">
                                     <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding Mirror}" />
                                 </HeaderedContentControl>
                                 <HeaderedContentControl Style="{StaticResource Row}" Header="显示眼睛轮廓">
@@ -446,17 +446,6 @@
                                 <HeaderedContentControl Style="{StaticResource Row}" Header="打开软件后自动开始监测">
                                     <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding AutoStart}" />
                                 </HeaderedContentControl>
-                                <Button Style="{StaticResource SecondaryButton}" Content="重新校准睁眼基准" Margin="0,12,0,0"
-                                        Command="{Binding RecalibrateCommand}" />
-                                <TextBlock Style="{StaticResource Muted}" Margin="0,10,0,0"
-                                           Text="更换使用者、调整了摄像头位置或光线明显变化后，建议重新校准。" />
-                            </StackPanel>
-                        </ScrollViewer>
-                    </TabItem>
-
-                    <TabItem Header="高级" Style="{StaticResource SegmentTab}">
-                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="2,0,8,0">
-                            <StackPanel>
                                 <HeaderedContentControl Style="{StaticResource Row}" Header="最短闭眼">
                                     <controls:Stepper Value="{Binding MinClosedMs}" Minimum="30" Maximum="300" Step="10"
                                                       Unit="毫秒" ValueWidth="76" />
@@ -466,7 +455,10 @@
                                                       Unit="毫秒" ValueWidth="76" />
                                 </HeaderedContentControl>
                                 <TextBlock Style="{StaticResource Muted}" Margin="0,4,0,0"
-                                           Text="一般无需修改。闭眼时间短于「最短」视为抖动，长于「最长」视为闭眼休息，都不计入眨眼次数。" />
+                                           Text="闭眼短于「最短」视为抖动，长于「最长」视为闭眼休息，都不计数。更换使用者或挪动摄像头后建议重新校准。" />
+                                <Button Style="{StaticResource SecondaryButton}" Content="重新校准睁眼基准" Margin="0,10,0,0"
+                                        ToolTip="更换使用者、调整了摄像头位置或光线明显变化后，建议重新校准"
+                                        Command="{Binding RecalibrateCommand}" />
                             </StackPanel>
                         </ScrollViewer>
                     </TabItem>
