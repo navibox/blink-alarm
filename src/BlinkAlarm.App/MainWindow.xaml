@@ -286,6 +286,11 @@
                     <TabItem Header="触发" Style="{StaticResource SegmentTab}">
                         <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="2,0,8,0">
                             <StackPanel>
+                                <HeaderedContentControl Style="{StaticResource Row}" Header="摄像头编号">
+                                    <controls:Stepper Value="{Binding CameraIndex}" Minimum="0" Maximum="9" />
+                                </HeaderedContentControl>
+                                <TextBlock Style="{StaticResource Muted}"
+                                           Text="内置摄像头一般是 0，外接 USB 摄像头请尝试 1、2…" />
                                 <HeaderedContentControl Style="{StaticResource Row}" Header="灵敏度" Margin="0,5,0,0">
                                     <TextBlock Text="{Binding Sensitivity, StringFormat={}{0:0}}" FontSize="17" FontWeight="SemiBold"
                                                Foreground="{StaticResource AccentBrush}" />
@@ -429,15 +434,10 @@
                         </ScrollViewer>
                     </TabItem>
 
-                    <TabItem Header="画面" Style="{StaticResource SegmentTab}">
+                    <TabItem Header="高级" Style="{StaticResource SegmentTab}">
                         <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="2,0,8,0">
                             <StackPanel>
-                                <HeaderedContentControl Style="{StaticResource Row}" Header="摄像头编号">
-                                    <controls:Stepper Value="{Binding CameraIndex}" Minimum="0" Maximum="9" />
-                                </HeaderedContentControl>
-                                <TextBlock Style="{StaticResource Muted}"
-                                           Text="内置摄像头一般是 0，外接 USB 摄像头请尝试 1、2…" />
-                                <HeaderedContentControl Style="{StaticResource Row}" Header="镜像显示" Margin="0,8,0,5">
+                                <HeaderedContentControl Style="{StaticResource Row}" Header="镜像显示">
                                     <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding Mirror}" />
                                 </HeaderedContentControl>
                                 <HeaderedContentControl Style="{StaticResource Row}" Header="显示眼睛轮廓">
@@ -446,17 +446,6 @@
                                 <HeaderedContentControl Style="{StaticResource Row}" Header="打开软件后自动开始监测">
                                     <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding AutoStart}" />
                                 </HeaderedContentControl>
-                                <Button Style="{StaticResource SecondaryButton}" Content="重新校准睁眼基准" Margin="0,12,0,0"
-                                        Command="{Binding RecalibrateCommand}" />
-                                <TextBlock Style="{StaticResource Muted}" Margin="0,10,0,0"
-                                           Text="更换使用者、调整了摄像头位置或光线明显变化后，建议重新校准。" />
-                            </StackPanel>
-                        </ScrollViewer>
-                    </TabItem>
-
-                    <TabItem Header="高级" Style="{StaticResource SegmentTab}">
-                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="2,0,8,0">
-                            <StackPanel>
                                 <HeaderedContentControl Style="{StaticResource Row}" Header="最短闭眼">
                                     <controls:Stepper Value="{Binding MinClosedMs}" Minimum="30" Maximum="300" Step="10"
                                                       Unit="毫秒" ValueWidth="76" />
@@ -466,7 +455,62 @@
                                                       Unit="毫秒" ValueWidth="76" />
                                 </HeaderedContentControl>
                                 <TextBlock Style="{StaticResource Muted}" Margin="0,4,0,0"
-                                           Text="一般无需修改。闭眼时间短于「最短」视为抖动，长于「最长」视为闭眼休息，都不计入眨眼次数。" />
+                                           Text="闭眼短于「最短」视为抖动，长于「最长」视为闭眼休息，都不计数。更换使用者或挪动摄像头后建议重新校准。" />
+                                <Button Style="{StaticResource SecondaryButton}" Content="重新校准睁眼基准" Margin="0,10,0,0"
+                                        ToolTip="更换使用者、调整了摄像头位置或光线明显变化后，建议重新校准"
+                                        Command="{Binding RecalibrateCommand}" />
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+
+                    <TabItem Header="关于" Style="{StaticResource SegmentTab}">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="2,0,8,0">
+                            <StackPanel>
+                                <StackPanel.Resources>
+                                    <Style x:Key="AboutText" TargetType="TextBlock">
+                                        <Setter Property="FontSize" Value="13" />
+                                        <Setter Property="LineHeight" Value="19" />
+                                        <Setter Property="TextWrapping" Value="Wrap" />
+                                        <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+                                    </Style>
+                                    <Style x:Key="AboutTitle" TargetType="TextBlock">
+                                        <Setter Property="FontSize" Value="13" />
+                                        <Setter Property="FontWeight" Value="SemiBold" />
+                                        <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+                                        <Setter Property="Margin" Value="0,10,0,2" />
+                                    </Style>
+                                </StackPanel.Resources>
+
+                                <TextBlock Margin="0,6,0,0">
+                                    <Run Text="眨眼报警助手" FontSize="18" FontWeight="SemiBold" />
+                                    <Run Text=" Blink Alarm" FontSize="14" Foreground="{StaticResource MutedBrush}" />
+                                </TextBlock>
+                                <TextBlock Text="{Binding VersionText}" Style="{StaticResource Muted}" Margin="0,2,0,6" />
+
+                                <TextBlock Style="{StaticResource AboutText}"
+                                           Text="本软件由作者借助 AI 辅助开发，面向渐冻症（ALS）等全身瘫痪的患者，通过摄像头识别眨眼动作来触发报警、呼叫看护。" />
+
+                                <TextBlock Style="{StaticResource AboutTitle}" Text="开源免费，禁止售卖" />
+                                <TextBlock Style="{StaticResource AboutText}"
+                                           Text="本项目完全开源、永久免费，禁止任何形式的售卖。如果有人向您收费，请不要购买，谨防上当受骗。" />
+
+                                <TextBlock Style="{StaticResource AboutTitle}" Text="使用提示" />
+                                <TextBlock Style="{StaticResource AboutText}"
+                                           Text="本软件是辅助工具，不是经过认证的医疗报警设备，不能作为唯一的求助途径。请保留呼叫铃、照护者巡视等其它求助方式。" />
+
+                                <TextBlock Style="{StaticResource AboutTitle}" Text="联系作者" />
+                                <TextBlock Style="{StaticResource AboutText}" Text="欢迎提出开发建议和需求反馈。" />
+                                <TextBlock Style="{StaticResource AboutText}">
+                                    <Run Text="项目地址：" /><Hyperlink NavigateUri="https://github.com/navibox/blink-alarm"
+                                        RequestNavigate="OnLinkClicked">github.com/navibox/blink-alarm</Hyperlink>
+                                </TextBlock>
+                                <TextBlock Style="{StaticResource AboutText}">
+                                    <Run Text="作者邮箱：" /><Hyperlink NavigateUri="mailto:lichoppy@gmail.com"
+                                        RequestNavigate="OnLinkClicked">lichoppy@gmail.com</Hyperlink>
+                                </TextBlock>
+
+                                <TextBlock Style="{StaticResource Muted}" FontSize="12" Margin="0,12,0,0"
+                                           Text="© 2026 navibox · 面部识别模型来自 Google MediaPipe（Apache-2.0）" />
                             </StackPanel>
                         </ScrollViewer>
                     </TabItem>

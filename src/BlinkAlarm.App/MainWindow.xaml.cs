@@ -30,6 +30,20 @@ public partial class MainWindow : Window
         Topmost = false;
     }
 
+    /// <summary>"关于"页里的链接：交给系统默认的浏览器或邮件程序打开。</summary>
+    void OnLinkClicked(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+    {
+        e.Handled = true;
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
+        }
+        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
+        {
+            // 没有默认浏览器或邮件程序：忽略，地址本身就显示在界面上。
+        }
+    }
+
     protected override void OnClosing(CancelEventArgs e)
     {
         if (viewModel.IsMonitoring && !App.IsSelfTest)
