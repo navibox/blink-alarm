@@ -12,6 +12,8 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Version>2.0.0</Version>
     <Product>眨眼报警助手</Product>
+    <Company>navibox</Company>
+    <Copyright>© 2026 navibox. 免费软件，禁止售卖。PolyForm Noncommercial 1.0.0</Copyright>
     <SatelliteResourceLanguages>zh-Hans</SatelliteResourceLanguages>
   </PropertyGroup>
   <ItemGroup>

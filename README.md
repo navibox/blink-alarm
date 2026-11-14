@@ -130,6 +130,16 @@ dotnet run --project src/BlinkAlarm.App  # 运行程序（Windows）
 
 发布后的 exe 支持 `BlinkAlarm.exe --self-test <输出文件夹>`：加载模型和原生库、把每个界面渲染一遍并保存截图，结果写入 `result.txt`。CI 用它确认打包出来的程序确实能启动。
 
-## 五、第三方组件
+## 五、许可证
+
+本软件免费提供，以 [PolyForm Noncommercial License 1.0.0](LICENSE.md) 授权：
+
+- 可以出于非商业目的免费使用、修改和分发；
+- **禁止任何商业用途**，包括售卖本软件或其修改版、打包收费；
+- 分发时必须保留 [NOTICE](NOTICE) 中的版权声明并附上许可证。
+
+Copyright © 2026 navibox
+
+## 六、第三方组件
 
 面部模型来自 Google MediaPipe（Apache License 2.0），推理使用 ONNX Runtime（MIT），摄像头采集使用 OpenCvSharp / OpenCV（Apache License 2.0）。详见 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)。
