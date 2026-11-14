@@ -61,14 +61,14 @@ jobs:
           if (Test-Path "$liteOut\result.txt") { Get-Content "$liteOut\result.txt" -Encoding UTF8 }
           if ($lite.ExitCode -ne 0) { throw "精简版自检失败，退出码 $($lite.ExitCode)" }
 
-          Compress-Archive -Path publish-lite\BlinkAlarm.exe -DestinationPath BlinkAlarm-Lite.zip
+          Compress-Archive -Path publish-lite\BlinkAlarm.exe, LICENSE.md, NOTICE, THIRD-PARTY-NOTICES.md -DestinationPath BlinkAlarm-Lite.zip
           Get-ChildItem publish\BlinkAlarm.exe, publish-lite\BlinkAlarm.exe, BlinkAlarm-Lite.zip | Format-Table Name, @{ n = "MB"; e = { [math]::Round($_.Length / 1MB, 1) } }
 
       - name: 附带许可证
         shell: pwsh
         run: |
           foreach ($dir in "publish", "publish-lite") {
-            Copy-Item THIRD-PARTY-NOTICES.md $dir
+            Copy-Item LICENSE.md, NOTICE, THIRD-PARTY-NOTICES.md $dir
             Copy-Item ThirdPartyLicenses/Apache-2.0.txt $dir
           }
 
@@ -78,6 +78,8 @@ jobs:
           name: BlinkAlarm-Windows
           path: |
             publish/BlinkAlarm.exe
+            publish/LICENSE.md
+            publish/NOTICE
             publish/THIRD-PARTY-NOTICES.md
             publish/Apache-2.0.txt
           if-no-files-found: error
@@ -89,6 +91,8 @@ jobs:
           name: BlinkAlarm-Windows-Lite
           path: |
             publish-lite/BlinkAlarm.exe
+            publish-lite/LICENSE.md
+            publish-lite/NOTICE
             publish-lite/THIRD-PARTY-NOTICES.md
             publish-lite/Apache-2.0.txt
           if-no-files-found: error
